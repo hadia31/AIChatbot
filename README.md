@@ -1,2 +1,2 @@
 # AIChatbot
-AI chatbot Android app using Kotlin and Gemini API
+.AI chatbot Android app using Kotlin and Gemini API.
