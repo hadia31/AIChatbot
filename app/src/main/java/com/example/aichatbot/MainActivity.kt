@@ -24,6 +24,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: MessageAdapter
     private lateinit var recyclerView: RecyclerView
 
+    // Our own trained TensorFlow Lite model (intent classifier)
+    private var classifier: IntentClassifier? = null
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
         .writeTimeout(120, TimeUnit.SECONDS)
@@ -33,6 +36,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Load the .tflite model from the assets folder
+        try {
+            classifier = IntentClassifier(this)
+        } catch (e: Exception) {
+            classifier = null
+        }
 
         recyclerView = findViewById(R.id.recyclerView)
         val etMessage = findViewById<EditText>(R.id.etMessage)
@@ -48,17 +58,34 @@ class MainActivity : AppCompatActivity() {
                 addMessage(text, true)
                 etMessage.text.clear()
 
+                // Step 1: run on-device inference with our TFLite model
+                val intentTag = buildIntentTag(text)
+
+                // Step 2: ask Gemini for the actual answer
                 addMessage("Typing...", false)
                 val placeholderIndex = messages.size - 1
 
                 getAIReply(text) { reply ->
                     runOnUiThread {
-                        messages[placeholderIndex] = Message(reply, false)
+                        messages[placeholderIndex] = Message(intentTag + reply, false)
                         adapter.notifyItemChanged(placeholderIndex)
                         recyclerView.scrollToPosition(messages.size - 1)
                     }
                 }
             }
+        }
+    }
+
+    // Uses the TFLite model to find the category of the user's message
+    private fun buildIntentTag(text: String): String {
+        val model = classifier ?: return ""
+        return try {
+            val (label, confidence) = model.classify(text)
+            val name = label.replaceFirstChar { it.uppercase() }
+            val percent = (confidence * 100).toInt()
+            "Detected intent: $name ($percent%)\n\n"
+        } catch (e: Exception) {
+            ""
         }
     }
 

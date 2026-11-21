@@ -52,4 +52,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("com.google.ai.edge.litert:litert:1.4.0")
 }
